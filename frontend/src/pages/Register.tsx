@@ -1,124 +1,131 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+ import { useState } from "react";
+ import { useNavigate } from "react-router-dom";
 
-function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+ import { registerUser } from "../services/userService";
 
-  const navigate = useNavigate();
+ function Register() {
+     const [email, setEmail] = useState("");
+     const [password, setPassword] = useState("");
 
-  // Kullanıcı zaten giriş yaptıysa Dashboard'a gönder
-  useEffect(() => {
-    const userId = localStorage.getItem("userId");
+     const navigate = useNavigate();
 
-    if (userId) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [navigate]);
+     const handleSubmit = async (
+         e: React.FormEvent
+     ) => {
+         e.preventDefault();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+         try {
+             await registerUser(
+                 email,
+                 password
+             );
 
-    try {
-      await axios.post(
-        "http://localhost:8080/users/register",
-        {
-          email: email,
-          password: password,
-        }
-      );
+             alert("Kayıt başarılı!");
 
-      alert("Kayıt başarılı!");
+             setEmail("");
+             setPassword("");
 
-      setEmail("");
-      setPassword("");
+             navigate("/login");
 
-      navigate("/login");
+         } catch (error) {
+             console.error(
+                 "Kayıt olurken hata oluştu:",
+                 error
+             );
 
-    } catch (error) {
-      console.error(
-        "Kayıt olurken hata oluştu:",
-        error
-      );
+             alert(
+                 "Kayıt olurken hata oluştu!"
+             );
+         }
+     };
 
-      alert("Kayıt olurken hata oluştu!");
-    }
-  };
+     return (
+         <div className="auth-page">
 
-  return (
-    <div className="auth-page">
+             <div className="auth-card">
 
-      <div className="auth-card">
+                 <div className="auth-icon">
+                     📝
+                 </div>
 
-        <div className="auth-icon">
-          📝
-        </div>
+                 <h1>Kayıt Ol</h1>
 
-        <h1>Kayıt Ol</h1>
+                 <p className="auth-subtitle">
+                     BudgetWise hesabını oluştur.
+                 </p>
 
-        <p className="auth-subtitle">
-          BudgetWise hesabını oluştur.
-        </p>
+                 <form onSubmit={handleSubmit}>
 
-        <form onSubmit={handleSubmit}>
+                     <div className="auth-input-group">
 
-          <div className="auth-input-group">
-            <label>E-posta</label>
+                         <label>
+                             E-posta
+                         </label>
 
-            <input
-              type="email"
-              placeholder="ornek@mail.com"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              required
-            />
-          </div>
+                         <input
+                             type="email"
+                             placeholder="ornek@mail.com"
+                             value={email}
+                             onChange={(e) =>
+                                 setEmail(
+                                     e.target.value
+                                 )
+                             }
+                             required
+                         />
 
-          <div className="auth-input-group">
-            <label>Şifre</label>
+                     </div>
 
-            <input
-              type="password"
-              placeholder="Şifrenizi girin"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              required
-            />
-          </div>
+                     <div className="auth-input-group">
 
-          <button
-            type="submit"
-            className="auth-submit"
-          >
-            ✨ Kayıt Ol
-          </button>
+                         <label>
+                             Şifre
+                         </label>
 
-        </form>
+                         <input
+                             type="password"
+                             placeholder="Şifrenizi girin"
+                             value={password}
+                             onChange={(e) =>
+                                 setPassword(
+                                     e.target.value
+                                 )
+                             }
+                             required
+                         />
 
-        <div className="auth-register">
+                     </div>
 
-          <span>
-            Zaten hesabın var mı?
-          </span>
+                     <button
+                         type="submit"
+                         className="auth-submit"
+                     >
+                         ✨ Kayıt Ol
+                     </button>
 
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
-          >
-            Giriş Yap
-          </button>
+                 </form>
 
-        </div>
+                 <div className="auth-register">
 
-      </div>
+                     <span>
+                         Zaten hesabın var mı?
+                     </span>
 
-    </div>
-  );
-}
+                     <button
+                         type="button"
+                         onClick={() =>
+                             navigate("/login")
+                         }
+                     >
+                         Giriş Yap
+                     </button>
 
-export default Register;
+                 </div>
+
+             </div>
+
+         </div>
+     );
+ }
+
+ export default Register;

@@ -1,134 +1,145 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { loginUser } from "../services/userService";
+
 function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  // Kullanıcı zaten giriş yaptıysa Dashboard'a gönder
-  useEffect(() => {
-    const userId = localStorage.getItem("userId");
+    const handleSubmit = async (
+        e: React.FormEvent
+    ) => {
+        e.preventDefault();
 
-    if (userId) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [navigate]);
+        try {
+            const response = await loginUser(
+                email,
+                password
+            );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+            if (response.success) {
+                localStorage.setItem(
+                    "userId",
+                    String(response.userId)
+                );
 
-    try {
-      const response = await axios.post(
-        "http://localhost:8080/users/login",
-        {
-          email: email,
-          password: password,
+                localStorage.setItem(
+                    "userEmail",
+                    response.email
+                );
+
+                alert("Giriş başarılı!");
+
+                navigate("/dashboard");
+            } else {
+                alert(
+                    response.message ||
+                    "E-posta veya şifre hatalı!"
+                );
+            }
+
+        } catch (error) {
+            console.error(
+                "Giriş yapılırken hata oluştu:",
+                error
+            );
+
+            alert(
+                "Giriş yapılırken hata oluştu!"
+            );
         }
-      );
+    };
 
-      if (response.data.success) {
-        localStorage.setItem(
-          "userId",
-          String(response.data.userId)
-        );
+    return (
+        <div className="auth-page">
 
-        localStorage.setItem(
-          "userEmail",
-          response.data.email
-        );
+            <div className="auth-card">
 
-        alert("Giriş başarılı!");
+                <div className="auth-icon">
+                    🔐
+                </div>
 
-        navigate("/dashboard");
-      } else {
-        alert("E-posta veya şifre hatalı!");
-      }
-    } catch (error) {
-      console.error(
-        "Giriş yapılırken hata oluştu:",
-        error
-      );
+                <h1>Giriş Yap</h1>
 
-      alert("Giriş yapılırken hata oluştu!");
-    }
-  };
+                <p className="auth-subtitle">
+                    BudgetWise hesabına giriş yap.
+                </p>
 
-  return (
-    <div className="auth-page">
+                <form onSubmit={handleSubmit}>
 
-      <div className="auth-card">
+                    <div className="auth-input-group">
 
-        <div className="auth-icon">
-          🔐
-        </div>
+                        <label>
+                            E-posta
+                        </label>
 
-        <h1>Giriş Yap</h1>
+                        <input
+                            type="email"
+                            placeholder="ornek@mail.com"
+                            value={email}
+                            onChange={(e) =>
+                                setEmail(
+                                    e.target.value
+                                )
+                            }
+                            required
+                        />
 
-        <p className="auth-subtitle">
-          BudgetWise hesabına giriş yap.
-        </p>
+                    </div>
 
-        <form onSubmit={handleSubmit}>
+                    <div className="auth-input-group">
 
-          <div className="auth-input-group">
-            <label>E-posta</label>
+                        <label>
+                            Şifre
+                        </label>
 
-            <input
-              type="email"
-              placeholder="ornek@mail.com"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              required
-            />
-          </div>
+                        <input
+                            type="password"
+                            placeholder="Şifrenizi girin"
+                            value={password}
+                            onChange={(e) =>
+                                setPassword(
+                                    e.target.value
+                                )
+                            }
+                            required
+                        />
 
-          <div className="auth-input-group">
-            <label>Şifre</label>
+                    </div>
 
-            <input
-              type="password"
-              placeholder="Şifrenizi girin"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              required
-            />
-          </div>
+                    <button
+                        type="submit"
+                        className="auth-submit"
+                    >
+                        🔑 Giriş Yap
+                    </button>
 
-          <button
-            type="submit"
-            className="auth-submit"
-          >
-            🔑 Giriş Yap
-          </button>
+                </form>
 
-        </form>
+                <div className="auth-register">
 
-        <div className="auth-register">
+                    <span>
+                        Hesabın yok mu?
+                    </span>
 
-          <span>
-            Hesabın yok mu?
-          </span>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            navigate("/register")
+                        }
+                    >
+                        Kayıt Ol
+                    </button>
 
-          <button
-            type="button"
-            onClick={() => navigate("/register")}
-          >
-            Kayıt Ol
-          </button>
+                </div>
+
+            </div>
 
         </div>
-
-      </div>
-
-    </div>
-  );
+    );
 }
 
 export default Login;

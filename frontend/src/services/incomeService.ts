@@ -1,19 +1,18 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/incomes";
-
+const API_URL = `${import.meta.env.VITE_API_URL}/incomes`;
 // =========================
 // GİRİŞ YAPAN KULLANICIYI AL
 // =========================
 
 const getUserId = () => {
-  const userId = localStorage.getItem("userId");
+    const userId = localStorage.getItem("userId");
 
-  if (!userId) {
-    throw new Error("Kullanıcı girişi bulunamadı.");
-  }
+    if (!userId) {
+        throw new Error("Kullanıcı girişi bulunamadı.");
+    }
 
-  return Number(userId);
+    return Number(userId);
 };
 
 // =========================
@@ -21,13 +20,13 @@ const getUserId = () => {
 // =========================
 
 export const getIncomes = async () => {
-  const userId = getUserId();
+    const userId = getUserId();
 
-  const response = await axios.get(
-    `${API_URL}/user/${userId}`
-  );
+    const response = await axios.get(
+        `${API_URL}/user/${userId}`
+    );
 
-  return response.data;
+    return response.data;
 };
 
 // =========================
@@ -35,24 +34,24 @@ export const getIncomes = async () => {
 // =========================
 
 export const createIncome = async (
-  title: string,
-  amount: number,
-  date: string
+    title: string,
+    amount: number,
+    date: string
 ) => {
-  const userId = getUserId();
+    const userId = getUserId();
 
-  const income = {
-    title: title,
-    amount: amount,
-    date: date,
-  };
+    const income = {
+        title: title,
+        amount: amount,
+        date: date,
+    };
 
-  const response = await axios.post(
-    `${API_URL}/user/${userId}`,
-    income
-  );
+    const response = await axios.post(
+        `${API_URL}/user/${userId}`,
+        income
+    );
 
-  return response.data;
+    return response.data;
 };
 
 // =========================
@@ -60,11 +59,11 @@ export const createIncome = async (
 // =========================
 
 export const deleteIncome = async (id: number) => {
-  const response = await axios.delete(
-    `${API_URL}/${id}`
-  );
+    const response = await axios.delete(
+        `${API_URL}/${id}`
+    );
 
-  return response.data;
+    return response.data;
 };
 
 // =========================
@@ -72,21 +71,21 @@ export const deleteIncome = async (id: number) => {
 // =========================
 
 export const updateIncome = async (
-  id: number,
-  title: string,
-  amount: number,
-  date: string
+    id: number,
+    title: string,
+    amount: number,
+    date: string
 ) => {
-  const income = {
-    title: title,
-    amount: amount,
-    date: date,
-  };
+    const income = {
+        title: title,
+        amount: amount,
+        date: date,
+    };
 
-  const response = await axios.put(
-    `${API_URL}/${id}`,
-    income
-  );
+    const response = await axios.put(
+        `${API_URL}/${id}`,
+        income
+    );
 
-  return response.data;
+    return response.data;
 };
