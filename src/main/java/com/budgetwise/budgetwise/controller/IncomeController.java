@@ -3,6 +3,7 @@ package com.budgetwise.budgetwise.controller;
 import com.budgetwise.budgetwise.entity.Income;
 import com.budgetwise.budgetwise.service.IncomeService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,55 +23,51 @@ public class IncomeController {
         this.incomeService = incomeService;
     }
 
-    // =========================
-    // KULLANICIYA AİT GELİRLER
-    // =========================
-
     @GetMapping("/user/{userId}")
     public List<Income> getUserIncomes(
-            @PathVariable Long userId
+            @PathVariable Long userId,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
-        return incomeService.getUserIncomes(userId);
+        return incomeService.getUserIncomes(
+                userId,
+                authenticatedUserId
+        );
     }
-
-    // =========================
-    // YENİ GELİR EKLE
-    // =========================
 
     @PostMapping("/user/{userId}")
     public Income addIncome(
             @PathVariable Long userId,
-            @Valid @RequestBody Income income
+            @Valid @RequestBody Income income,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
         return incomeService.saveIncome(
                 income,
-                userId
+                userId,
+                authenticatedUserId
         );
     }
-
-    // =========================
-    // GELİR GÜNCELLE
-    // =========================
 
     @PutMapping("/{id}")
     public Income updateIncome(
             @PathVariable Long id,
-            @Valid @RequestBody Income income
+            @Valid @RequestBody Income income,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
         return incomeService.updateIncome(
                 id,
-                income
+                income,
+                authenticatedUserId
         );
     }
 
-    // =========================
-    // GELİR SİL
-    // =========================
-
     @DeleteMapping("/{id}")
     public void deleteIncome(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
-        incomeService.deleteIncome(id);
+        incomeService.deleteIncome(
+                id,
+                authenticatedUserId
+        );
     }
 }

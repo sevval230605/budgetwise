@@ -1,9 +1,6 @@
 import axios from "axios";
 
 const API_URL = `${import.meta.env.VITE_API_URL}/expenses`;
-// =========================
-// GİRİŞ YAPAN KULLANICIYI AL
-// =========================
 
 const getUserId = () => {
     const userId = localStorage.getItem("userId");
@@ -15,23 +12,26 @@ const getUserId = () => {
     return Number(userId);
 };
 
-// =========================
-// KULLANICIYA AİT GİDERLERİ GETİR
-// =========================
+const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+
+    return {
+        Authorization: `Bearer ${token}`
+    };
+};
 
 export const getExpenses = async () => {
     const userId = getUserId();
 
     const response = await axios.get(
-        `${API_URL}/user/${userId}`
+        `${API_URL}/user/${userId}`,
+        {
+            headers: getAuthHeaders()
+        }
     );
 
     return response.data;
 };
-
-// =========================
-// YENİ GİDER EKLE
-// =========================
 
 export const createExpense = async (
     title: string,
@@ -41,36 +41,32 @@ export const createExpense = async (
 ) => {
     const userId = getUserId();
 
-    const expense = {
-        title: title,
-        amount: amount,
-        category: category,
-        date: date,
-    };
-
     const response = await axios.post(
         `${API_URL}/user/${userId}`,
-        expense
+        {
+            title,
+            amount,
+            category,
+            date
+        },
+        {
+            headers: getAuthHeaders()
+        }
     );
 
     return response.data;
 };
-
-// =========================
-// GİDER SİL
-// =========================
 
 export const deleteExpense = async (id: number) => {
     const response = await axios.delete(
-        `${API_URL}/${id}`
+        `${API_URL}/${id}`,
+        {
+            headers: getAuthHeaders()
+        }
     );
 
     return response.data;
 };
-
-// =========================
-// GİDER GÜNCELLE
-// =========================
 
 export const updateExpense = async (
     id: number,
@@ -79,16 +75,17 @@ export const updateExpense = async (
     category: string,
     date: string
 ) => {
-    const expense = {
-        title: title,
-        amount: amount,
-        category: category,
-        date: date,
-    };
-
     const response = await axios.put(
         `${API_URL}/${id}`,
-        expense
+        {
+            title,
+            amount,
+            category,
+            date
+        },
+        {
+            headers: getAuthHeaders()
+        }
     );
 
     return response.data;

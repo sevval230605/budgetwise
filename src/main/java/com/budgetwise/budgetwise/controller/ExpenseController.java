@@ -3,6 +3,7 @@ package com.budgetwise.budgetwise.controller;
 import com.budgetwise.budgetwise.entity.Expense;
 import com.budgetwise.budgetwise.service.ExpenseService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,63 +19,55 @@ public class ExpenseController {
 
     private final ExpenseService expenseService;
 
-    public ExpenseController(
-            ExpenseService expenseService
-    ) {
+    public ExpenseController(ExpenseService expenseService) {
         this.expenseService = expenseService;
     }
 
-    // =========================
-    // KULLANICIYA AİT GİDERLERİ GETİR
-    // =========================
-
     @GetMapping("/user/{userId}")
     public List<Expense> getUserExpenses(
-            @PathVariable Long userId
+            @PathVariable Long userId,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
         return expenseService.getUserExpenses(
-                userId
+                userId,
+                authenticatedUserId
         );
     }
-
-    // =========================
-    // YENİ GİDER EKLE
-    // =========================
 
     @PostMapping("/user/{userId}")
     public Expense addExpense(
             @PathVariable Long userId,
-            @Valid @RequestBody Expense expense
+            @Valid @RequestBody Expense expense,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
         return expenseService.saveExpense(
                 expense,
-                userId
+                userId,
+                authenticatedUserId
         );
     }
-
-    // =========================
-    // GİDER GÜNCELLE
-    // =========================
 
     @PutMapping("/{id}")
     public Expense updateExpense(
             @PathVariable Long id,
-            @Valid @RequestBody Expense expense
+            @Valid @RequestBody Expense expense,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
         return expenseService.updateExpense(
                 id,
-                expense
+                expense,
+                authenticatedUserId
         );
     }
 
-    // =========================
-    // GİDER SİL
-    // =========================
-
     @DeleteMapping("/{id}")
     public void deleteExpense(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
-        expenseService.deleteExpense(id);
+        expenseService.deleteExpense(
+                id,
+                authenticatedUserId
+        );
     }
 }

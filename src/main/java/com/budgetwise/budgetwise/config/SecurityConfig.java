@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -16,62 +17,65 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) {
+        this.jwtAuthenticationFilter =
+                jwtAuthenticationFilter;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http
     ) throws Exception {
 
         http
-                // CORS
                 .cors(Customizer.withDefaults())
 
-                // Şimdilik CSRF kapalı
                 .csrf(csrf -> csrf.disable())
 
-                // Şimdilik mevcut frontend bağlantılarını
-                // bozmamak için endpoint'ler açık
                 .authorizeHttpRequests(auth -> auth
 
-                        // Kullanıcı işlemleri
-                        .requestMatchers("/users/**")
-                        .permitAll()
-
-                        // Gelir işlemleri
-                        .requestMatchers("/incomes/**")
-                        .permitAll()
-
-                        // Gider işlemleri
-                        .requestMatchers("/expenses/**")
-                        .permitAll()
-
-                        // H2 Database Console
-                        .requestMatchers("/h2-console/**")
-                        .permitAll()
+                        // Login ve kayıt açık
+                        .requestMatchers(
+                                "/users/login",
+                                "/users/register"
+                        ).permitAll()
 
                         // Swagger
-                        .requestMatchers("/swagger-ui/**")
-                        .permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
 
-                        .requestMatchers("/v3/api-docs/**")
-                        .permitAll()
+                        // H2 Console
+                        .requestMatchers(
+                                "/h2-console/**"
+                        ).permitAll()
 
-                        // Diğer istekler
+                        // Diğer endpointler JWT istiyor
                         .anyRequest()
-                        .permitAll()
+                        .authenticated()
                 )
 
-                // H2 Console için iframe kullanımına izin ver
                 .headers(headers ->
                         headers.frameOptions(frame ->
                                 frame.disable()
                         )
+                )
+
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
                 );
 
         return http.build();
     }
 
     // =========================
-    // CORS AYARLARI
+    // CORS
     // =========================
 
     @Bean
@@ -121,7 +125,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 }

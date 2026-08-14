@@ -23,10 +23,15 @@ public class IncomeService {
     }
 
     // =========================
-    // KULLANICIYA AİT GELİRLERİ GETİR
+    // GELİRLERİ GETİR
     // =========================
 
-    public List<Income> getUserIncomes(Long userId) {
+    public List<Income> getUserIncomes(
+            Long userId,
+            Long authenticatedUserId
+    ) {
+
+        checkAuthorization(userId, authenticatedUserId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() ->
@@ -36,13 +41,16 @@ public class IncomeService {
     }
 
     // =========================
-    // YENİ GELİR KAYDET
+    // GELİR EKLE
     // =========================
 
     public Income saveIncome(
             Income income,
-            Long userId
+            Long userId,
+            Long authenticatedUserId
     ) {
+
+        checkAuthorization(userId, authenticatedUserId);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() ->
@@ -59,8 +67,13 @@ public class IncomeService {
 
     public Income updateIncome(
             Long id,
-            Income income
+            Income income,
+            Long authenticatedUserId
     ) {
+
+        if (authenticatedUserId == null) {
+            throw new RuntimeException("Yetkisiz erişim");
+        }
 
         Income existingIncome =
                 incomeRepository.findById(id)
@@ -69,43 +82,40 @@ public class IncomeService {
                                         "Gelir bulunamadı"
                                 ));
 
-        // Mevcut gelirin kullanıcısı
-        User existingUser =
-                existingIncome.getUser();
+        User existingUser = existingIncome.getUser();
 
-        // Güncellenecek gelire başka
-        // bir kullanıcının bağlanmasını engelle
         if (existingUser == null) {
             throw new RuntimeException(
                     "Gelirin kullanıcısı bulunamadı"
             );
         }
 
-        existingIncome.setTitle(
-                income.getTitle()
-        );
+        if (!existingUser.getId().equals(authenticatedUserId)) {
+            throw new RuntimeException("Yetkisiz erişim");
+        }
 
-        existingIncome.setAmount(
-                income.getAmount()
-        );
+        existingIncome.setTitle(income.getTitle());
+        existingIncome.setAmount(income.getAmount());
+        existingIncome.setDate(income.getDate());
 
-        existingIncome.setDate(
-                income.getDate()
-        );
-
-        // Kullanıcı bilgisini değiştirme
+        // Kullanıcıyı değiştirmiyoruz
         existingIncome.setUser(existingUser);
 
-        return incomeRepository.save(
-                existingIncome
-        );
+        return incomeRepository.save(existingIncome);
     }
 
     // =========================
     // GELİR SİL
     // =========================
 
-    public void deleteIncome(Long id) {
+    public void deleteIncome(
+            Long id,
+            Long authenticatedUserId
+    ) {
+
+        if (authenticatedUserId == null) {
+            throw new RuntimeException("Yetkisiz erişim");
+        }
 
         Income existingIncome =
                 incomeRepository.findById(id)
@@ -114,15 +124,40 @@ public class IncomeService {
                                         "Gelir bulunamadı"
                                 ));
 
-        // Kullanıcısı olmayan gelir silinmesin
-        if (existingIncome.getUser() == null) {
+        User existingUser = existingIncome.getUser();
+
+        if (existingUser == null) {
             throw new RuntimeException(
                     "Gelirin kullanıcısı bulunamadı"
             );
         }
 
-        incomeRepository.delete(
-                existingIncome
-        );
+        if (!existingUser.getId().equals(authenticatedUserId)) {
+            throw new RuntimeException("Yetkisiz erişim");
+        }
+
+        incomeRepository.delete(existingIncome);
+    }
+
+    // =========================
+    // YETKİ KONTROLÜ
+    // =========================
+
+    private void checkAuthorization(
+            Long userId,
+            Long authenticatedUserId
+    ) {
+
+        if (authenticatedUserId == null) {
+            throw new RuntimeException("Yetkisiz erişim");
+        }
+
+        if (userId == null) {
+            throw new RuntimeException("Kullanıcı ID bulunamadı");
+        }
+
+        if (!userId.equals(authenticatedUserId)) {
+            throw new RuntimeException("Yetkisiz erişim");
+        }
     }
 }

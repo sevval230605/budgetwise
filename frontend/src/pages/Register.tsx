@@ -1,131 +1,161 @@
- import { useState } from "react";
- import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
- import { registerUser } from "../services/userService";
+import { registerUser } from "../services/userService";
+import "../App.css";
 
- function Register() {
-     const [email, setEmail] = useState("");
-     const [password, setPassword] = useState("");
+function Register() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
 
-     const navigate = useNavigate();
+    const navigate = useNavigate();
 
-     const handleSubmit = async (
-         e: React.FormEvent
-     ) => {
-         e.preventDefault();
+    const handleSubmit = async (
+        e: React.FormEvent
+    ) => {
+        e.preventDefault();
 
-         try {
-             await registerUser(
-                 email,
-                 password
-             );
+        const cleanEmail = email.trim();
 
-             alert("Kayıt başarılı!");
+        if (!cleanEmail) {
+            alert("Lütfen e-posta adresinizi girin.");
+            return;
+        }
 
-             setEmail("");
-             setPassword("");
+        if (!password) {
+            alert("Lütfen şifrenizi girin.");
+            return;
+        }
 
-             navigate("/login");
+        if (password.length < 6) {
+            alert(
+                "Şifre en az 6 karakter olmalıdır."
+            );
+            return;
+        }
 
-         } catch (error) {
-             console.error(
-                 "Kayıt olurken hata oluştu:",
-                 error
-             );
+        try {
+            setLoading(true);
 
-             alert(
-                 "Kayıt olurken hata oluştu!"
-             );
-         }
-     };
+            await registerUser(
+                cleanEmail,
+                password
+            );
 
-     return (
-         <div className="auth-page">
+            alert("Kayıt başarılı!");
 
-             <div className="auth-card">
+            setEmail("");
+            setPassword("");
 
-                 <div className="auth-icon">
-                     📝
-                 </div>
+            navigate("/login");
 
-                 <h1>Kayıt Ol</h1>
+        } catch (error) {
 
-                 <p className="auth-subtitle">
-                     BudgetWise hesabını oluştur.
-                 </p>
+            console.error(
+                "Kayıt olurken hata oluştu:",
+                error
+            );
 
-                 <form onSubmit={handleSubmit}>
+            alert(
+                "Kayıt olurken hata oluştu. E-posta daha önce kullanılmış olabilir."
+            );
 
-                     <div className="auth-input-group">
+        } finally {
+            setLoading(false);
+        }
+    };
 
-                         <label>
-                             E-posta
-                         </label>
+    return (
+        <div className="auth-page">
 
-                         <input
-                             type="email"
-                             placeholder="ornek@mail.com"
-                             value={email}
-                             onChange={(e) =>
-                                 setEmail(
-                                     e.target.value
-                                 )
-                             }
-                             required
-                         />
+            <div className="auth-card">
 
-                     </div>
+                <div className="auth-icon">
+                    📝
+                </div>
 
-                     <div className="auth-input-group">
+                <h1>Kayıt Ol</h1>
 
-                         <label>
-                             Şifre
-                         </label>
+                <p className="auth-subtitle">
+                    BudgetWise hesabını oluştur.
+                </p>
 
-                         <input
-                             type="password"
-                             placeholder="Şifrenizi girin"
-                             value={password}
-                             onChange={(e) =>
-                                 setPassword(
-                                     e.target.value
-                                 )
-                             }
-                             required
-                         />
+                <form onSubmit={handleSubmit}>
 
-                     </div>
+                    <div className="auth-input-group">
 
-                     <button
-                         type="submit"
-                         className="auth-submit"
-                     >
-                         ✨ Kayıt Ol
-                     </button>
+                        <label>
+                            E-posta
+                        </label>
 
-                 </form>
+                        <input
+                            type="email"
+                            placeholder="ornek@mail.com"
+                            value={email}
+                            onChange={(e) =>
+                                setEmail(e.target.value)
+                            }
+                            required
+                            disabled={loading}
+                        />
 
-                 <div className="auth-register">
+                    </div>
 
-                     <span>
-                         Zaten hesabın var mı?
-                     </span>
+                    <div className="auth-input-group">
 
-                     <button
-                         type="button"
-                         onClick={() =>
-                             navigate("/login")
-                         }
-                     >
-                         Giriş Yap
-                     </button>
+                        <label>
+                            Şifre
+                        </label>
 
-                 </div>
+                        <input
+                            type="password"
+                            placeholder="En az 6 karakter"
+                            value={password}
+                            onChange={(e) =>
+                                setPassword(e.target.value)
+                            }
+                            required
+                            minLength={6}
+                            disabled={loading}
+                        />
 
-             </div>
+                    </div>
 
-         </div>
-     );
- }
+                    <button
+                        type="submit"
+                        className="auth-submit"
+                        disabled={loading}
+                    >
+                        {loading
+                            ? "⏳ Kayıt yapılıyor..."
+                            : "✨ Kayıt Ol"}
+                    </button>
 
- export default Register;
+                </form>
+
+                <div className="auth-register">
+
+                    <span>
+                        Zaten hesabın var mı?
+                    </span>
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            navigate("/login")
+                        }
+                        disabled={loading}
+                    >
+                        Giriş Yap
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+    );
+}
+
+export default Register;

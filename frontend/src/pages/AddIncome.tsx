@@ -1,124 +1,159 @@
- import { useState } from "react";
- import { useNavigate } from "react-router-dom";
- import { createIncome } from "../services/incomeService";
- import "../App.css";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createIncome } from "../services/incomeService";
+import "../App.css";
 
- function AddIncome() {
-   const navigate = useNavigate();
+function AddIncome() {
+    const navigate = useNavigate();
 
-   const [title, setTitle] = useState("");
-   const [amount, setAmount] = useState("");
-   const [date, setDate] = useState("");
+    const [title, setTitle] = useState("");
+    const [amount, setAmount] = useState("");
+    const [date, setDate] = useState("");
+    const [loading, setLoading] = useState(false);
 
-   const handleSubmit = async (e: React.FormEvent) => {
-     e.preventDefault();
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
 
-     try {
-       await createIncome(
-         title,
-         Number(amount),
-         date
-       );
+        const cleanTitle = title.trim();
+        const numericAmount = Number(amount);
 
-       alert("Gelir başarıyla eklendi!");
+        if (!cleanTitle) {
+            alert("Lütfen gelir başlığı girin.");
+            return;
+        }
 
-       setTitle("");
-       setAmount("");
-       setDate("");
+        if (!amount || numericAmount <= 0) {
+            alert("Lütfen geçerli bir tutar girin.");
+            return;
+        }
 
-       navigate("/dashboard");
-     } catch (error) {
-       console.error(
-         "Gelir eklenirken hata:",
-         error
-       );
+        if (!date) {
+            alert("Lütfen tarih seçin.");
+            return;
+        }
 
-       alert("Gelir eklenirken hata oluştu!");
-     }
-   };
+        try {
+            setLoading(true);
 
-   return (
-     <div className="money-page">
-       <div className="money-card">
+            await createIncome(
+                cleanTitle,
+                numericAmount,
+                date
+            );
 
-         <button
-           className="money-back-button"
-           onClick={() => navigate("/dashboard")}
-         >
-           ← Dashboard
-         </button>
+            alert("Gelir başarıyla eklendi!");
 
-         <div className="money-icon">
-           💰
-         </div>
+            setTitle("");
+            setAmount("");
+            setDate("");
 
-         <h1>Gelir Ekle</h1>
+            navigate("/dashboard");
 
-         <p className="money-subtitle">
-           Gelir bilgilerini girerek bütçene ekle.
-         </p>
+        } catch (error) {
+            console.error(
+                "Gelir eklenirken hata:",
+                error
+            );
 
-         <form onSubmit={handleSubmit}>
+            alert(
+                "Gelir eklenirken bir hata oluştu. Lütfen tekrar deneyin."
+            );
 
-           <div className="money-input-group">
-             <label>Gelir Başlığı</label>
+        } finally {
+            setLoading(false);
+        }
+    };
 
-             <input
-               type="text"
-               placeholder="Örneğin: Maaş"
-               value={title}
-               onChange={(e) =>
-                 setTitle(e.target.value)
-               }
-               required
-             />
-           </div>
+    return (
+        <div className="money-page">
+            <div className="money-card">
 
-           <div className="money-input-group">
-             <label>Tutar</label>
+                <button
+                    type="button"
+                    className="money-back-button"
+                    onClick={() => navigate("/dashboard")}
+                    disabled={loading}
+                >
+                    ← Dashboard
+                </button>
 
-             <div className="money-input-wrapper">
-               <span>₺</span>
+                <div className="money-icon">
+                    💰
+                </div>
 
-               <input
-                 type="number"
-                 placeholder="15000"
-                 value={amount}
-                 onChange={(e) =>
-                   setAmount(e.target.value)
-                 }
-                 min="0.01"
-                 step="0.01"
-                 required
-               />
-             </div>
-           </div>
+                <h1>Gelir Ekle</h1>
 
-           <div className="money-input-group">
-             <label>Tarih</label>
+                <p className="money-subtitle">
+                    Gelir bilgilerini girerek bütçene ekle.
+                </p>
 
-             <input
-               type="date"
-               value={date}
-               onChange={(e) =>
-                 setDate(e.target.value)
-               }
-               required
-             />
-           </div>
+                <form onSubmit={handleSubmit}>
 
-           <button
-             type="submit"
-             className="money-submit"
-           >
-             💰 Geliri Kaydet
-           </button>
+                    <div className="money-input-group">
+                        <label>Gelir Başlığı</label>
 
-         </form>
+                        <input
+                            type="text"
+                            placeholder="Örneğin: Maaş"
+                            value={title}
+                            onChange={(e) =>
+                                setTitle(e.target.value)
+                            }
+                            required
+                            disabled={loading}
+                        />
+                    </div>
 
-       </div>
-     </div>
-   );
- }
+                    <div className="money-input-group">
+                        <label>Tutar</label>
 
- export default AddIncome;
+                        <div className="money-input-wrapper">
+                            <span>₺</span>
+
+                            <input
+                                type="number"
+                                placeholder="15000"
+                                value={amount}
+                                onChange={(e) =>
+                                    setAmount(e.target.value)
+                                }
+                                min="0.01"
+                                step="0.01"
+                                required
+                                disabled={loading}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="money-input-group">
+                        <label>Tarih</label>
+
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={(e) =>
+                                setDate(e.target.value)
+                            }
+                            required
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        className="money-submit"
+                        disabled={loading}
+                    >
+                        {loading
+                            ? "⏳ Kaydediliyor..."
+                            : "💰 Geliri Kaydet"}
+                    </button>
+
+                </form>
+
+            </div>
+        </div>
+    );
+}
+
+export default AddIncome;

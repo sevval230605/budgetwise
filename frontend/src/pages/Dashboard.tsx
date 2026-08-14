@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { getBudget, saveBudget } from "../services/budgetService";
 import { getUser } from "../services/userService";
 
 import {
@@ -32,26 +33,98 @@ import {
 function Dashboard() {
   const navigate = useNavigate();
 
+  const [budgetAmount, setBudgetAmount] = useState("");
+  const [currentBudget, setCurrentBudget] =
+    useState<number | null>(null);
+  const [budgetMonth, setBudgetMonth] = useState("");
+
   const [expenses, setExpenses] = useState<any[]>([]);
   const [incomes, setIncomes] = useState<any[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [selectedPeriod, setSelectedPeriod] =
+    useState("all");
 
   const [userEmail, setUserEmail] = useState("");
 
   const [editingExpenseId, setEditingExpenseId] =
     useState<number | null>(null);
 
-  const [editExpenseTitle, setEditExpenseTitle] = useState("");
-  const [editExpenseAmount, setEditExpenseAmount] = useState("");
-  const [editExpenseCategory, setEditExpenseCategory] = useState("");
-  const [editExpenseDate, setEditExpenseDate] = useState("");
+  const [editExpenseTitle, setEditExpenseTitle] =
+    useState("");
+  const [editExpenseAmount, setEditExpenseAmount] =
+    useState("");
+  const [editExpenseCategory, setEditExpenseCategory] =
+    useState("");
+  const [editExpenseDate, setEditExpenseDate] =
+    useState("");
 
   const [editingIncomeId, setEditingIncomeId] =
     useState<number | null>(null);
 
-  const [editIncomeTitle, setEditIncomeTitle] = useState("");
-  const [editIncomeAmount, setEditIncomeAmount] = useState("");
-  const [editIncomeDate, setEditIncomeDate] = useState("");
+  const [editIncomeTitle, setEditIncomeTitle] =
+    useState("");
+  const [editIncomeAmount, setEditIncomeAmount] =
+    useState("");
+  const [editIncomeDate, setEditIncomeDate] =
+    useState("");
+
+  // =========================
+  // BÜTÇE KAYDET
+  // =========================
+
+  const handleSaveBudget = async () => {
+    if (!budgetMonth || !budgetAmount) {
+      alert("Ay ve bütçe miktarını gir.");
+      return;
+    }
+
+    try {
+      const budget = await saveBudget(
+        budgetMonth,
+        Number(budgetAmount)
+      );
+
+      setCurrentBudget(budget.amount);
+
+      alert("Bütçe başarıyla kaydedildi!");
+    } catch (error) {
+      console.error(
+        "Bütçe kaydedilemedi:",
+        error
+      );
+
+      alert(
+        "Bütçe kaydedilirken hata oluştu."
+      );
+    }
+  };
+
+  // =========================
+  // BÜTÇE GETİR
+  // =========================
+
+  useEffect(() => {
+    if (!budgetMonth) {
+      return;
+    }
+
+    getBudget(budgetMonth)
+      .then((budget) => {
+        if (budget) {
+          setCurrentBudget(budget.amount);
+          setBudgetAmount(
+            String(budget.amount)
+          );
+        } else {
+          setCurrentBudget(null);
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "Bütçe alınamadı:",
+          error
+        );
+      });
+  }, [budgetMonth]);
 
   // =========================
   // VERİLERİ GETİR
@@ -62,7 +135,10 @@ function Dashboard() {
       const data = await getExpenses();
       setExpenses(data);
     } catch (error) {
-      console.error("Giderler alınamadı:", error);
+      console.error(
+        "Giderler alınamadı:",
+        error
+      );
     }
   };
 
@@ -71,7 +147,10 @@ function Dashboard() {
       const data = await getIncomes();
       setIncomes(data);
     } catch (error) {
-      console.error("Gelirler alınamadı:", error);
+      console.error(
+        "Gelirler alınamadı:",
+        error
+      );
     }
   };
 
@@ -79,7 +158,8 @@ function Dashboard() {
     loadExpenses();
     loadIncomes();
 
-    const userId = localStorage.getItem("userId");
+    const userId =
+      localStorage.getItem("userId");
 
     if (userId) {
       getUser(Number(userId))
@@ -102,6 +182,7 @@ function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem("userId");
     localStorage.removeItem("userEmail");
+    localStorage.removeItem("token");
 
     navigate("/login");
   };
@@ -116,7 +197,9 @@ function Dashboard() {
       : expenses.filter(
           (expense) =>
             expense.date &&
-            expense.date.startsWith(selectedPeriod)
+            expense.date.startsWith(
+              selectedPeriod
+            )
         );
 
   const filteredIncomes =
@@ -125,38 +208,77 @@ function Dashboard() {
       : incomes.filter(
           (income) =>
             income.date &&
-            income.date.startsWith(selectedPeriod)
+            income.date.startsWith(
+              selectedPeriod
+            )
         );
 
   // =========================
   // TOPLAMLAR
   // =========================
 
-  const totalIncome = filteredIncomes.reduce(
-    (sum: number, income: any) =>
-      sum + Number(income.amount),
-    0
-  );
+  const totalIncome =
+    filteredIncomes.reduce(
+      (sum: number, income: any) =>
+        sum + Number(income.amount),
+      0
+    );
 
-  const totalExpense = filteredExpenses.reduce(
-    (sum: number, expense: any) =>
-      sum + Number(expense.amount),
-    0
-  );
+  const totalExpense =
+    filteredExpenses.reduce(
+      (sum: number, expense: any) =>
+        sum + Number(expense.amount),
+      0
+    );
 
-  const balance = totalIncome - totalExpense;
+  const balance =
+    totalIncome - totalExpense;
+
+  // =========================
+  // BÜTÇE HESAPLAMA
+  // =========================
+
+  const budgetExpenses =
+    budgetMonth
+      ? expenses
+          .filter(
+            (expense) =>
+              expense.date &&
+              expense.date.startsWith(
+                budgetMonth
+              )
+          )
+          .reduce(
+            (sum: number, expense: any) =>
+              sum + Number(expense.amount),
+            0
+          )
+      : 0;
+
+  const remainingBudget =
+    currentBudget !== null
+      ? currentBudget - budgetExpenses
+      : null;
 
   // =========================
   // GİDER SİL
   // =========================
 
-  const handleDeleteExpense = async (id: number) => {
+  const handleDeleteExpense = async (
+    id: number
+  ) => {
     try {
       await deleteExpense(id);
       await loadExpenses();
     } catch (error) {
-      console.error("Gider silinemedi:", error);
-      alert("Gider silinirken bir hata oluştu.");
+      console.error(
+        "Gider silinemedi:",
+        error
+      );
+
+      alert(
+        "Gider silinirken bir hata oluştu."
+      );
     }
   };
 
@@ -164,15 +286,25 @@ function Dashboard() {
   // GİDER DÜZENLE
   // =========================
 
-  const handleEditExpense = (expense: any) => {
+  const handleEditExpense = (
+    expense: any
+  ) => {
     setEditingExpenseId(expense.id);
     setEditExpenseTitle(expense.title);
-    setEditExpenseAmount(String(expense.amount));
-    setEditExpenseCategory(expense.category);
-    setEditExpenseDate(expense.date || "");
+    setEditExpenseAmount(
+      String(expense.amount)
+    );
+    setEditExpenseCategory(
+      expense.category
+    );
+    setEditExpenseDate(
+      expense.date || ""
+    );
   };
 
-  const handleUpdateExpense = async (id: number) => {
+  const handleUpdateExpense = async (
+    id: number
+  ) => {
     try {
       await updateExpense(
         id,
@@ -185,8 +317,14 @@ function Dashboard() {
       setEditingExpenseId(null);
       await loadExpenses();
     } catch (error) {
-      console.error("Gider güncellenemedi:", error);
-      alert("Gider güncellenirken bir hata oluştu.");
+      console.error(
+        "Gider güncellenemedi:",
+        error
+      );
+
+      alert(
+        "Gider güncellenirken bir hata oluştu."
+      );
     }
   };
 
@@ -194,13 +332,21 @@ function Dashboard() {
   // GELİR SİL
   // =========================
 
-  const handleDeleteIncome = async (id: number) => {
+  const handleDeleteIncome = async (
+    id: number
+  ) => {
     try {
       await deleteIncome(id);
       await loadIncomes();
     } catch (error) {
-      console.error("Gelir silinemedi:", error);
-      alert("Gelir silinirken bir hata oluştu.");
+      console.error(
+        "Gelir silinemedi:",
+        error
+      );
+
+      alert(
+        "Gelir silinirken bir hata oluştu."
+      );
     }
   };
 
@@ -208,14 +354,22 @@ function Dashboard() {
   // GELİR DÜZENLE
   // =========================
 
-  const handleEditIncome = (income: any) => {
+  const handleEditIncome = (
+    income: any
+  ) => {
     setEditingIncomeId(income.id);
     setEditIncomeTitle(income.title);
-    setEditIncomeAmount(String(income.amount));
-    setEditIncomeDate(income.date || "");
+    setEditIncomeAmount(
+      String(income.amount)
+    );
+    setEditIncomeDate(
+      income.date || ""
+    );
   };
 
-  const handleUpdateIncome = async (id: number) => {
+  const handleUpdateIncome = async (
+    id: number
+  ) => {
     try {
       await updateIncome(
         id,
@@ -227,8 +381,14 @@ function Dashboard() {
       setEditingIncomeId(null);
       await loadIncomes();
     } catch (error) {
-      console.error("Gelir güncellenemedi:", error);
-      alert("Gelir güncellenirken bir hata oluştu.");
+      console.error(
+        "Gelir güncellenemedi:",
+        error
+      );
+
+      alert(
+        "Gelir güncellenirken bir hata oluştu."
+      );
     }
   };
 
@@ -236,24 +396,41 @@ function Dashboard() {
   // KATEGORİ TOPLAMLARI
   // =========================
 
-  const categoryTotals = filteredExpenses.reduce(
-    (result: any[], expense: any) => {
-      const existingCategory = result.find(
-        (item) => item.name === expense.category
-      );
+  const categoryTotals =
+    filteredExpenses.reduce(
+      (result: any[], expense: any) => {
+        const existingCategory =
+          result.find(
+            (item) =>
+              item.name ===
+              expense.category
+          );
 
-      if (existingCategory) {
-        existingCategory.value += Number(expense.amount);
-      } else {
-        result.push({
-          name: expense.category,
-          value: Number(expense.amount),
-        });
-      }
+        if (existingCategory) {
+          existingCategory.value +=
+            Number(expense.amount);
+        } else {
+          result.push({
+            name: expense.category,
+            value: Number(
+              expense.amount
+            ),
+          });
+        }
 
-      return result;
-    },
-    []
+        return result;
+      },
+      []
+    );
+
+  const categorySummary = categoryTotals.map(
+    (category: any) => ({
+      ...category,
+      percentage:
+        totalExpense > 0
+          ? (category.value / totalExpense) * 100
+          : 0,
+    })
   );
 
   const summaryData = [
@@ -279,7 +456,9 @@ function Dashboard() {
   // TARİH FORMATLA
   // =========================
 
-  const formatDate = (date: string) => {
+  const formatDate = (
+    date: string
+  ) => {
     if (!date) {
       return "Tarih yok";
     }
@@ -292,6 +471,28 @@ function Dashboard() {
 
     return `${parts[2]}.${parts[1]}.${parts[0]}`;
   };
+
+  // =========================
+  // DİNAMİK AYLAR
+  // =========================
+
+  const currentYear =
+    new Date().getFullYear();
+
+  const monthNames = [
+    "Ocak",
+    "Şubat",
+    "Mart",
+    "Nisan",
+    "Mayıs",
+    "Haziran",
+    "Temmuz",
+    "Ağustos",
+    "Eylül",
+    "Ekim",
+    "Kasım",
+    "Aralık",
+  ];
 
   return (
     <>
@@ -360,10 +561,6 @@ function Dashboard() {
           font-weight: 600;
         }
 
-        /* =========================
-           BUTONLAR
-        ========================= */
-
         .dashboard-actions {
           display: flex;
           gap: 15px;
@@ -413,10 +610,6 @@ function Dashboard() {
             ) !important;
         }
 
-        /* =========================
-           DÖNEM
-        ========================= */
-
         .period-selector {
           display: flex;
           align-items: center;
@@ -447,10 +640,6 @@ function Dashboard() {
           color: white;
           outline: none;
         }
-
-        /* =========================
-           KARTLAR
-        ========================= */
 
         .cards {
           display: grid;
@@ -508,9 +697,119 @@ function Dashboard() {
           color: #c4b5fd;
         }
 
-        /* =========================
-           GRAFİKLER
-        ========================= */
+        .budget-card {
+          margin-bottom: 25px;
+          padding: 25px;
+
+          background:
+            rgba(18,23,48,.9);
+
+          border:
+            1px solid
+            rgba(139,92,246,.3);
+
+          border-radius: 20px;
+
+          box-shadow:
+            0 15px 35px
+            rgba(0,0,0,.25);
+        }
+
+        .budget-card h2 {
+          margin-top: 0;
+          color: #ddd6fe;
+        }
+
+        .budget-form {
+          display: grid;
+          grid-template-columns:
+            100px 1fr 140px 1fr auto;
+
+          align-items: center;
+          gap: 12px;
+        }
+
+        .budget-form label {
+          color: #aeb7d1;
+          font-weight: 600;
+        }
+
+        .budget-form input {
+          padding: 12px;
+
+          border-radius: 10px;
+
+          border:
+            1px solid #6366f1;
+
+          background: #0e1530;
+
+          color: white;
+
+          outline: none;
+        }
+
+        .budget-form button {
+          border: none;
+
+          padding: 12px 18px;
+
+          border-radius: 10px;
+
+          color: white;
+
+          font-weight: 700;
+
+          cursor: pointer;
+
+          background:
+            linear-gradient(
+              135deg,
+              #059669,
+              #2563eb
+            );
+        }
+
+        .current-budget {
+          margin-top: 18px;
+
+          padding: 14px;
+
+          border-radius: 12px;
+
+          background:
+            rgba(139,92,246,.12);
+
+          color: #c4b5fd;
+        }
+
+        .remaining-budget {
+          margin-top: 12px;
+
+          padding: 14px;
+
+          border-radius: 12px;
+
+          background:
+            rgba(5,150,105,.12);
+
+          border:
+            1px solid
+            rgba(5,150,105,.25);
+
+          color: #a7f3d0;
+        }
+
+        .remaining-budget.negative {
+          background:
+            rgba(190,24,93,.12);
+
+          border:
+            1px solid
+            rgba(190,24,93,.3);
+
+          color: #fda4af;
+        }
 
         .charts {
           display: grid;
@@ -548,13 +847,51 @@ function Dashboard() {
           margin-top: 0;
         }
 
-        /* =========================
-           LİSTELER
-        ========================= */
-
         .income-list,
         .expense-list {
           margin-bottom: 25px;
+        }
+
+        .category-summary {
+          margin-top: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .category-summary-title {
+          color: #aeb7d1;
+          font-size: 14px;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+
+        .category-summary-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: rgba(30,35,72,.65);
+          border: 1px solid rgba(99,102,241,.18);
+        }
+
+        .category-summary-name {
+          color: #ddd6fe;
+          font-weight: 600;
+        }
+
+        .category-summary-amount {
+          color: #ffffff;
+          font-weight: 700;
+          text-align: right;
+        }
+
+        .category-summary-percentage {
+          color: #929bb8;
+          font-size: 12px;
+          margin-left: 6px;
         }
 
         .income-item,
@@ -611,10 +948,6 @@ function Dashboard() {
           color: #929bb8;
           font-size: 13px;
         }
-
-        /* =========================
-           İŞLEM BUTONLARI
-        ========================= */
 
         .action-button {
 
@@ -680,10 +1013,6 @@ function Dashboard() {
           background: #374151;
         }
 
-        /* =========================
-           INPUTLAR
-        ========================= */
-
         .income-item input,
         .expense-item input,
         .expense-item select {
@@ -719,10 +1048,6 @@ function Dashboard() {
             rgba(139,92,246,.15);
         }
 
-        /* =========================
-           TABLET
-        ========================= */
-
         @media (max-width: 900px) {
 
           .dashboard {
@@ -735,11 +1060,11 @@ function Dashboard() {
               1fr;
           }
 
-        }
+          .budget-form {
+            grid-template-columns: 1fr;
+          }
 
-        /* =========================
-           TELEFON
-        ========================= */
+        }
 
         @media (max-width: 600px) {
 
@@ -766,7 +1091,6 @@ function Dashboard() {
           }
 
           .period-selector {
-
             flex-direction:
               column;
 
@@ -855,10 +1179,6 @@ function Dashboard() {
             </div>
           )}
 
-          {/* =========================
-              AKSİYONLAR
-          ========================= */}
-
           <div className="dashboard-actions">
 
             <button
@@ -894,10 +1214,6 @@ function Dashboard() {
 
           </div>
 
-          {/* =========================
-              DÖNEM
-          ========================= */}
-
           <div className="period-selector">
 
             <label>
@@ -906,71 +1222,44 @@ function Dashboard() {
 
             <select
               value={selectedPeriod}
-              onChange={(e) =>
-                setSelectedPeriod(
-                  e.target.value
-                )
-              }
+              onChange={(e) => {
+                const period = e.target.value;
+
+                setSelectedPeriod(period);
+
+                if (period !== "all") {
+                  setBudgetMonth(period);
+                }
+              }}
             >
               <option value="all">
                 Tüm Dönemler
               </option>
 
-              <option value="2026-01">
-                Ocak 2026
-              </option>
+              {Array.from(
+                { length: 12 },
+                (_, index) => {
+                  const month =
+                    String(index + 1).padStart(
+                      2,
+                      "0"
+                    );
 
-              <option value="2026-02">
-                Şubat 2026
-              </option>
-
-              <option value="2026-03">
-                Mart 2026
-              </option>
-
-              <option value="2026-04">
-                Nisan 2026
-              </option>
-
-              <option value="2026-05">
-                Mayıs 2026
-              </option>
-
-              <option value="2026-06">
-                Haziran 2026
-              </option>
-
-              <option value="2026-07">
-                Temmuz 2026
-              </option>
-
-              <option value="2026-08">
-                Ağustos 2026
-              </option>
-
-              <option value="2026-09">
-                Eylül 2026
-              </option>
-
-              <option value="2026-10">
-                Ekim 2026
-              </option>
-
-              <option value="2026-11">
-                Kasım 2026
-              </option>
-
-              <option value="2026-12">
-                Aralık 2026
-              </option>
+                  return (
+                    <option
+                      key={`${currentYear}-${month}`}
+                      value={`${currentYear}-${month}`}
+                    >
+                      {monthNames[index]}{" "}
+                      {currentYear}
+                    </option>
+                  );
+                }
+              )}
 
             </select>
 
           </div>
-
-          {/* =========================
-              ÖZET KARTLARI
-          ========================= */}
 
           <div className="cards">
 
@@ -1021,9 +1310,87 @@ function Dashboard() {
 
           </div>
 
-          {/* =========================
-              GRAFİKLER
-          ========================= */}
+          <div className="budget-card">
+
+            <h2>
+              💰 Aylık Bütçem
+            </h2>
+
+            <div className="budget-form">
+
+              <label>
+                Ay
+              </label>
+
+              <input
+                type="month"
+                value={budgetMonth}
+                onChange={(e) =>
+                  setBudgetMonth(
+                    e.target.value
+                  )
+                }
+              />
+
+              <label>
+                Bütçe
+              </label>
+
+              <input
+                type="number"
+                placeholder="Örn: 15000"
+                value={budgetAmount}
+                onChange={(e) =>
+                  setBudgetAmount(
+                    e.target.value
+                  )
+                }
+              />
+
+              <button
+                onClick={handleSaveBudget}
+              >
+                💾 Kaydet
+              </button>
+
+            </div>
+
+            {currentBudget !== null && (
+              <div className="current-budget">
+                Mevcut bütçen:{" "}
+                <strong>
+                  {currentBudget.toLocaleString(
+                    "tr-TR"
+                  )}{" "}
+                  ₺
+                </strong>
+              </div>
+            )}
+
+            {remainingBudget !== null && (
+              <div
+                className={`remaining-budget ${
+                  remainingBudget < 0
+                    ? "negative"
+                    : ""
+                }`}
+              >
+                {remainingBudget >= 0
+                  ? "Kalan bütçen: "
+                  : "Bütçeyi aşan miktar: "}
+
+                <strong>
+                  {Math.abs(
+                    remainingBudget
+                  ).toLocaleString(
+                    "tr-TR"
+                  )}{" "}
+                  ₺
+                </strong>
+              </div>
+            )}
+
+          </div>
 
           <div className="charts">
 
@@ -1155,23 +1522,55 @@ function Dashboard() {
 
               )}
 
+              {categorySummary.length > 0 && (
+                <div className="category-summary">
+                  <div className="category-summary-title">
+                    Kategori Detayları
+                  </div>
+
+                  {categorySummary
+                    .sort(
+                      (a: any, b: any) =>
+                        b.value - a.value
+                    )
+                    .map((category: any) => (
+                      <div
+                        className="category-summary-item"
+                        key={category.name}
+                      >
+                        <span className="category-summary-name">
+                          {category.name}
+                        </span>
+
+                        <span className="category-summary-amount">
+                          ₺
+                          {category.value.toLocaleString(
+                            "tr-TR"
+                          )}
+                          <span className="category-summary-percentage">
+                            (
+                            {category.percentage.toFixed(
+                              1
+                            )}
+                            %)
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+
             </div>
 
           </div>
 
-          {/* =========================
-              GELİRLER
-          ========================= */}
-
           <div className="income-list">
 
             <h2>
-
               {selectedPeriod ===
               "all"
                 ? "Son Gelirler"
                 : "Seçilen Dönemin Gelirleri"}
-
             </h2>
 
             {filteredIncomes.length ===
@@ -1312,27 +1711,19 @@ function Dashboard() {
                     )}
 
                   </div>
-
                 )
               )
-
             )}
 
           </div>
 
-          {/* =========================
-              GİDERLER
-          ========================= */}
-
           <div className="expense-list">
 
             <h2>
-
               {selectedPeriod ===
               "all"
                 ? "Son Giderler"
                 : "Seçilen Dönemin Giderleri"}
-
             </h2>
 
             {filteredExpenses.length ===
@@ -1510,10 +1901,8 @@ function Dashboard() {
                     )}
 
                   </div>
-
                 )
               )
-
             )}
 
           </div>

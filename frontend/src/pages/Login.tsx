@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { loginUser } from "../services/userService";
+import "../App.css";
 
 function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
@@ -14,13 +16,28 @@ function Login() {
     ) => {
         e.preventDefault();
 
+        const cleanEmail = email.trim();
+
+        if (!cleanEmail || !password) {
+            alert("Lütfen e-posta ve şifre girin.");
+            return;
+        }
+
         try {
+            setLoading(true);
+
             const response = await loginUser(
-                email,
+                cleanEmail,
                 password
             );
 
             if (response.success) {
+
+                if (!response.userId || !response.token) {
+                    alert("Giriş bilgileri alınamadı.");
+                    return;
+                }
+
                 localStorage.setItem(
                     "userId",
                     String(response.userId)
@@ -28,13 +45,20 @@ function Login() {
 
                 localStorage.setItem(
                     "userEmail",
-                    response.email
+                    response.email || cleanEmail
+                );
+
+                localStorage.setItem(
+                    "token",
+                    response.token
                 );
 
                 alert("Giriş başarılı!");
 
                 navigate("/dashboard");
+
             } else {
+
                 alert(
                     response.message ||
                     "E-posta veya şifre hatalı!"
@@ -42,6 +66,7 @@ function Login() {
             }
 
         } catch (error) {
+
             console.error(
                 "Giriş yapılırken hata oluştu:",
                 error
@@ -50,6 +75,9 @@ function Login() {
             alert(
                 "Giriş yapılırken hata oluştu!"
             );
+
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -81,11 +109,10 @@ function Login() {
                             placeholder="ornek@mail.com"
                             value={email}
                             onChange={(e) =>
-                                setEmail(
-                                    e.target.value
-                                )
+                                setEmail(e.target.value)
                             }
                             required
+                            disabled={loading}
                         />
 
                     </div>
@@ -101,11 +128,10 @@ function Login() {
                             placeholder="Şifrenizi girin"
                             value={password}
                             onChange={(e) =>
-                                setPassword(
-                                    e.target.value
-                                )
+                                setPassword(e.target.value)
                             }
                             required
+                            disabled={loading}
                         />
 
                     </div>
@@ -113,8 +139,11 @@ function Login() {
                     <button
                         type="submit"
                         className="auth-submit"
+                        disabled={loading}
                     >
-                        🔑 Giriş Yap
+                        {loading
+                            ? "⏳ Giriş yapılıyor..."
+                            : "🔑 Giriş Yap"}
                     </button>
 
                 </form>
@@ -130,6 +159,7 @@ function Login() {
                         onClick={() =>
                             navigate("/register")
                         }
+                        disabled={loading}
                     >
                         Kayıt Ol
                     </button>

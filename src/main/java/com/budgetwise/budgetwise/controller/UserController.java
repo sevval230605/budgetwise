@@ -2,8 +2,11 @@ package com.budgetwise.budgetwise.controller;
 
 import com.budgetwise.budgetwise.entity.User;
 import com.budgetwise.budgetwise.repository.UserRepository;
+import com.budgetwise.budgetwise.service.JwtService;
 import com.budgetwise.budgetwise.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,15 +18,18 @@ import org.springframework.web.bind.annotation.*;
 })
 public class UserController {
 
+    private final JwtService jwtService;
     private final UserService userService;
     private final UserRepository userRepository;
 
     public UserController(
             UserService userService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            JwtService jwtService
     ) {
         this.userService = userService;
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
 
     // =========================
@@ -40,7 +46,6 @@ public class UserController {
                 request.getPassword()
         );
     }
-
 
     // =========================
     // GİRİŞ YAP
@@ -62,18 +67,24 @@ public class UserController {
                     false,
                     null,
                     null,
+                    null,
                     "E-posta veya şifre hatalı"
             );
         }
+
+        String token = jwtService.generateToken(
+                user.getId(),
+                user.getEmail()
+        );
 
         return new LoginResponse(
                 true,
                 user.getId(),
                 user.getEmail(),
+                token,
                 "Giriş başarılı"
         );
     }
-
 
     // =========================
     // KULLANICI BİLGİLERİNİ GETİR
@@ -81,8 +92,23 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long authenticatedUserId
     ) {
+
+        // JWT'den gelen kullanıcı yoksa erişimi reddet
+        if (authenticatedUserId == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+
+        // Kullanıcı sadece kendi bilgilerine erişebilir
+        if (!authenticatedUserId.equals(id)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
 
         return userRepository.findById(id)
                 .map(user -> ResponseEntity.ok(
@@ -95,7 +121,6 @@ public class UserController {
                         ResponseEntity.notFound().build()
                 );
     }
-
 
     // =========================
     // REGISTER REQUEST
@@ -126,7 +151,6 @@ public class UserController {
         }
     }
 
-
     // =========================
     // LOGIN REQUEST
     // =========================
@@ -156,7 +180,6 @@ public class UserController {
         }
     }
 
-
     // =========================
     // LOGIN RESPONSE
     // =========================
@@ -166,18 +189,20 @@ public class UserController {
         private boolean success;
         private Long userId;
         private String email;
+        private String token;
         private String message;
 
         public LoginResponse(
                 boolean success,
                 Long userId,
                 String email,
+                String token,
                 String message
         ) {
-
             this.success = success;
             this.userId = userId;
             this.email = email;
+            this.token = token;
             this.message = message;
         }
 
@@ -193,11 +218,14 @@ public class UserController {
             return email;
         }
 
+        public String getToken() {
+            return token;
+        }
+
         public String getMessage() {
             return message;
         }
     }
-
 
     // =========================
     // USER RESPONSE
@@ -212,7 +240,6 @@ public class UserController {
                 Long id,
                 String email
         ) {
-
             this.id = id;
             this.email = email;
         }

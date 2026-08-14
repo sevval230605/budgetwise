@@ -10,13 +10,16 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     // =========================
@@ -79,5 +82,17 @@ public class UserService {
         }
 
         return user;
+    }
+
+    // =========================
+    // JWT TOKEN OLUŞTUR
+    // =========================
+
+    public String generateToken(User user) {
+
+        return jwtService.generateToken(
+                user.getId(),
+                user.getEmail()
+        );
     }
 }
