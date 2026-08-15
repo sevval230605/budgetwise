@@ -22,8 +22,7 @@ public class SecurityConfig {
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) {
-        this.jwtAuthenticationFilter =
-                jwtAuthenticationFilter;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
@@ -37,6 +36,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
+
+                        // Ana adres açık
+                        .requestMatchers("/").permitAll()
 
                         // Login ve kayıt açık
                         .requestMatchers(
@@ -55,9 +57,14 @@ public class SecurityConfig {
                                 "/h2-console/**"
                         ).permitAll()
 
+                        // OPTIONS istekleri açık
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.OPTIONS,
+                                "/**"
+                        ).permitAll()
+
                         // Diğer endpointler JWT istiyor
-                        .anyRequest()
-                        .authenticated()
+                        .anyRequest().authenticated()
                 )
 
                 .headers(headers ->
