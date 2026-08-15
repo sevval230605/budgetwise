@@ -1,6 +1,10 @@
 import axios from "axios";
 
-const API_URL = `${import.meta.env.VITE_API_URL}/users`;
+const API_BASE_URL =
+    import.meta.env.VITE_API_URL ||
+    "https://budgetwise-ld67.onrender.com";
+
+const API_URL = `${API_BASE_URL}/users`;
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
