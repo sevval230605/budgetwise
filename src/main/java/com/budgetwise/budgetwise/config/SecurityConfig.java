@@ -46,18 +46,18 @@ public class SecurityConfig {
                                 "/users/register"
                         ).permitAll()
 
-                        // Swagger
+                        // Swagger açık
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // H2 Console
+                        // H2 Console açık
                         .requestMatchers(
                                 "/h2-console/**"
                         ).permitAll()
 
-                        // OPTIONS istekleri açık
+                        // CORS preflight istekleri açık
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.OPTIONS,
                                 "/**"
@@ -88,14 +88,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration =
-                new CorsConfiguration();
+        CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(
+        configuration.setAllowedOriginPatterns(
                 List.of(
-                        "http://localhost:5173",
-                        "http://localhost:5174",
-                        "http://localhost:5175"
+                        "https://budgetwise-coral.vercel.app",
+                        "http://localhost:*"
                 )
         );
 
@@ -114,6 +112,8 @@ public class SecurityConfig {
         );
 
         configuration.setAllowCredentials(true);
+
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
