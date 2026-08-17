@@ -93,6 +93,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(
                 List.of(
                         "https://budgetwise-coral.vercel.app",
+                        "https://budgetwise-kd5i7rhk-sevvaltekbas.vercel.app",
                         "http://localhost:*"
                 )
         );
